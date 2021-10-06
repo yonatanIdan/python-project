@@ -5,7 +5,7 @@ IP = '127.0.0.1'
 PORT = 54321
 SERVER_ADDRESS = (IP, PORT)
 FILENAME = "status.txt"
-sleepSecond = 25
+sleepSecond = 5
 s = socket.socket()
 
 print('connecting to server at {}:{} ...'.format(*SERVER_ADDRESS))
