@@ -7,12 +7,12 @@ def main():
     # None -> blocking mode (the default)
     # 0 -> immediate mode (must have the data immediately)
     # >0 -> seconds to wait
-    socket.setdefaulttimeout(0)
+    socket.setdefaulttimeout(120)
     accept_socket = socket.socket()
     client_list = []
 
     IP = '127.0.0.1'
-    PORT = 54321
+    PORT = 54322
     BUFFERSIZE = 16
     accept_socket.bind((IP, PORT))
     DB_FILENAME = "data.sqlite"
@@ -29,6 +29,7 @@ PRIMARY KEY(station_id)
 INSERT OR REPLACE INTO station_status
 VALUES (?, ?, ?, ?)
 """
+
     # create status table and if not exists make one
     with sqlite3.connect(DB_FILENAME) as conn:
         conn.execute(SQL_CREATE_TABLE)
@@ -40,14 +41,14 @@ VALUES (?, ?, ?, ?)
             try:
                 c, a = accept_socket.accept()
             except (socket.timeout, BlockingIOError) as error:
-                print("error2: {}".format(error))
+                print("Error: {}".format(error))
                 exit(0)
             else:
                 print("new client connected:", a)
                 client_list.append(c)
 
             # for each client do
-            for c in client_list.copy():
+            # for c in client_list.copy():
 
                 try:
                     data = c.recv(1024)
@@ -58,7 +59,7 @@ VALUES (?, ?, ?, ?)
                     print("client {}:{} crashed".format(*c.getpeername()))
                     client_list.remove(c)
                 else:
-                    # empty data == client closed
+                    # empty data == server closed
                     if len(data) == 0:
                         print("client {}:{} closed. Don't have data".format(*c.getpeername()))
                         client_list.remove(c)
@@ -73,16 +74,20 @@ VALUES (?, ?, ?, ?)
                         # write in database the data from the client
                         try:
                             with sqlite3.connect(DB_FILENAME) as conn:
-                                cur = conn.execute(SQL_INSERT_TABLE, (int(station), timestamp, int(A1), int(A2)))
-                                print("student added successfully\n{}".format(cur))
+                                conn.execute(SQL_INSERT_TABLE, (int(station), timestamp, int(A1), int(A2)))
+                                print("added successfully\nStation:{} A1:{} A2:{} Time:{}".format(station, A1, A2, timestamp))
                         except ValueError as valueError:
                             print("error in the value --> {}".format(valueError))
 
-                        print("{}:{} -> {}\nTime: {}".format(*c.getpeername(), [station, int(A1), int(A2)], timestamp))
-                        response = compute_response(data)
-                        print("response -> {}".format(response))
-                        s = "{},{},{}".format(response, station, str(timestamp))
-                        c.send(s.encode())
+                        try:
+                            print("{}:{} -> {}\nTime: {}".format(*c.getpeername(), [station, int(A1), int(A2)], timestamp))
+                            response = compute_response(data)
+                            print("response -> {}".format(response))
+                            string = "{},{},{}".format(response, station, str(timestamp))
+                            c.send(string.encode())
+                        except OSError:
+                            print("client {}:{} crashed".format(*c.getpeername()))
+
     except KeyboardInterrupt:
         exit(0)
     finally:
