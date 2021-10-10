@@ -1,21 +1,12 @@
 import socket
 import time
 
-IP = '127.0.0.1'
-PORT = 54321
-SERVER_ADDRESS = (IP, PORT)
+SERVER_ADDRESS = ('127.0.0.1', 54322)
+BUFFER_SIZE = 1024
 FILENAME = "status.txt"
-sleepSecond = 5
-s = socket.socket()
+sleepSecond = 10
+try:
 
-print('connecting to server at {}:{} ...'.format(*SERVER_ADDRESS))
-try:
-    s.connect(SERVER_ADDRESS)
-    print('connected...')
-except socket.error as error:
-    print("Caught exception socket.error : {}".format(error))
-    exit(1)
-try:
     while True:
         try:
             with open(FILENAME) as file:
@@ -34,6 +25,7 @@ try:
             print("Something went wrong when reading the file {}".format(FILENAME))
             break
 
+        # print data station from file
         print("---------------------------")
         print("""
     Station ID:     {}
@@ -41,23 +33,19 @@ try:
     Alarm 2 status: {:1}\n""".format(ID, ALARM1, ALARM2))
 
         print("---------------------------")
-        msg = data
-        s.send(msg.encode())
-        response = s.recv(1024).decode()
-        print("{}\nstation {}\nTime: {}".format(*response.split(",")))
+
+
+        with socket.socket() as client_socket:
+            print("connecting to server at {}:{}...".format(*SERVER_ADDRESS))
+            client_socket.connect(SERVER_ADDRESS)
+
+            print("connected. sending message...")
+            msg = data
+            client_socket.send(msg.encode())
+
+            response = client_socket.recv(BUFFER_SIZE)
+            print('server sent back: "{}"'.format(response.decode()))
 
         time.sleep(sleepSecond)
-except IndexError as error:
-    print("the Error is: {}".format(error))
-    exit(1)
-except ValueError as valueError:
-    print("error in the value --> {}".format(valueError))
-    exit(1)
-except ConnectionAbortedError:
-    print("problem in the server\nget look if the server off")
-    exit(1)
-except KeyboardInterrupt or BrokenPipeError:
-    exit(1)
-finally:
-    s.close()
-
+except KeyboardInterrupt:
+    print("good bay! ")
