@@ -4,7 +4,7 @@ import time
 SERVER_ADDRESS = ('127.0.0.1', 54322)
 BUFFER_SIZE = 1024
 FILENAME = "status.txt"
-sleepSecond = 10
+sleepSecond = 60
 try:
 
     while True:
@@ -34,18 +34,35 @@ try:
 
         print("---------------------------")
 
+        try:
+            with socket.socket() as client_socket:
+                print("connecting to server at {}:{}...".format(*SERVER_ADDRESS))
+                client_socket.connect(SERVER_ADDRESS)
 
-        with socket.socket() as client_socket:
-            print("connecting to server at {}:{}...".format(*SERVER_ADDRESS))
-            client_socket.connect(SERVER_ADDRESS)
+                print("connected. sending message...")
+                msg = data
+                client_socket.send(msg.encode())
 
-            print("connected. sending message...")
-            msg = data
-            client_socket.send(msg.encode())
-
-            response = client_socket.recv(BUFFER_SIZE)
-            print('server sent back: "{}"'.format(response.decode()))
+                print("waiting for response...")
+                response = client_socket.recv(BUFFER_SIZE)
+                print('server sent back: "{}"'.format(response.decode()))
+        except socket.error as error:
+            print("Caught exception socket.error : {}".format(error))
+            exit(1)
+        except ConnectionAbortedError or ConnectionResetError:
+            print("problem in the server\nget look if the server off")
+            exit(0)
 
         time.sleep(sleepSecond)
+except IndexError or BrokenPipeError as error:
+    print("the Error is: {}".format(error))
+    exit(1)
+except ValueError as valueError:
+    print("error in the value --> {}".format(valueError))
+    exit(1)
+except ConnectionAbortedError or ConnectionResetError:
+    print("problem in the server\nget look if the server off")
+    exit(0)
 except KeyboardInterrupt:
-    print("good bay! ")
+    print("good bay")
+

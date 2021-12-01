@@ -89,6 +89,7 @@ VALUES (?, ?, ?, ?)
                             print("client {}:{} crashed".format(*c.getpeername()))
 
     except KeyboardInterrupt:
+        print("the server was closed")
         exit(0)
     finally:
         for c in client_list:
